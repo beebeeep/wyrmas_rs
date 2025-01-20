@@ -26,6 +26,7 @@ pub static ACTIONS: &'static [ActivationFn] = &[a_resp, a_move, a_turn];
 pub static INNER: &'static [ActivationFn] = &[tanh_activation];
 
 pub struct Neuron {
+    pub id: i32,
     pub potential: f32,
     activate: ActivationFn,
     inputs: Vec<Link>,
@@ -33,25 +34,27 @@ pub struct Neuron {
 
 struct Link {
     weight: f32,
-    source: Rc<RefCell<Neuron>>,
+    source: Option<Rc<RefCell<Neuron>>>, // if None, then link to itself. We may have cycles here, but no need in weak ref here as we never destroy neurons rn
 }
 
 impl Neuron {
-    pub fn new(activate: ActivationFn) -> Self {
+    pub fn new(id: i32, activate: ActivationFn) -> Self {
         Neuron {
+            id: id,
             potential: 0.0,
             activate: activate,
             inputs: Vec::with_capacity(1),
         }
     }
-    pub fn add_input(self: &mut Self, weight: f32, n: Rc<RefCell<Neuron>>) {
+    pub fn add_input(self: &mut Self, weight: f32, n: Option<Rc<RefCell<Neuron>>>) {
         self.inputs.push(Link {
             weight: weight,
-            source: Rc::clone(&n),
+            source: n.map(|n| Rc::clone(&n)),
         });
     }
 
     pub fn reset(self: &mut Self) {
+        // shell we drop the links explicitly?
         self.inputs.truncate(0);
     }
 
@@ -242,7 +245,13 @@ fn tanh_activation(
 ) -> f32 {
     n.inputs
         .iter()
-        .fold(0.0, |a, x| a + x.weight + x.source.borrow().potential)
+        .fold(0.0, |a, x| {
+            a + x.weight
+                + match &x.source {
+                    Some(p) => p.borrow().potential,
+                    None => n.potential,
+                }
+        })
         .tanh()
 }
 
