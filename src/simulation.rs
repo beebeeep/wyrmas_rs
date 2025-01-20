@@ -1,5 +1,3 @@
-use std::os;
-
 use crate::{
     genome::Gene,
     wyrm::{self, Wyrm},
@@ -15,8 +13,11 @@ pub struct SimulationState {
     pub size_y: i32,
     pub max_age: i32,
     pub osc_period: i32,
+    pub osc_value: f32,
     pub mutation_rate: f32,
     pub tick: u64,
+    pub world: Vec<Vec<bool>>,
+    pub selection_area: Vec<Vec<bool>>,
 }
 
 impl Simulation {
@@ -38,7 +39,10 @@ impl Simulation {
                 size_y: size_y,
                 max_age: max_age,
                 osc_period: osc_period,
+                osc_value: 0.0,
                 mutation_rate: mutation_rate,
+                world: vec![vec![true; size_y as usize]; size_x as usize],
+                selection_area: vec![vec![true; size_y as usize]; size_x as usize],
             },
             wyrmas: Vec::with_capacity(population),
         };
@@ -54,9 +58,9 @@ impl Simulation {
         return s;
     }
 
-    pub fn simulationStep(self: &mut Self) -> u64 {
+    pub fn simulation_step(self: &mut Self) -> u64 {
         for w in &mut self.wyrmas {
-            w.simulationStep(&mut self.state);
+            w.simulation_step(&mut self.state);
         }
         self.state.tick += 1;
         return self.state.tick;
