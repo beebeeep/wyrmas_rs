@@ -23,7 +23,7 @@ impl Gene {
     }
 
     pub fn get_weight(self: &Self) -> f32 {
-        (self.0 & 65536 - 32767) as f32 / 8192.0
+        ((self.0 & 65535) as i32 - 32767) as f32 / 8192.0
     }
 
     pub fn mutate(self: &mut Self) {
@@ -43,4 +43,16 @@ pub fn mix_genome(a: &Vec<Gene>, b: &Vec<Gene>) -> Vec<Gene> {
         r.push(v[i % 2][*idx].clone());
     }
     return r;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_weights() {
+        let g = Gene(65535);
+        assert_eq!(Gene(65535).get_weight(), 4.0);
+        assert!(Gene(0).get_weight() < -3.99);
+    }
 }

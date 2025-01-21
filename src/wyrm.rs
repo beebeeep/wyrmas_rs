@@ -82,11 +82,11 @@ impl Wyrm {
         for g in &self.state.genome {
             let src = match g.get_src() {
                 (true, id) => self.inner_layer[id % self.inner_layer.len()].clone(),
-                (false, id) => self.sensor_layer[id % self.inner_layer.len()].clone(),
+                (false, id) => self.sensor_layer[id % self.sensor_layer.len()].clone(),
             };
             let sink = match g.get_sink() {
                 (true, id) => self.inner_layer[id % self.inner_layer.len()].clone(),
-                (false, id) => self.sensor_layer[id % self.inner_layer.len()].clone(),
+                (false, id) => self.action_layer[id % self.action_layer.len()].clone(),
             };
             let src = if src.borrow().id == sink.borrow().id {
                 None

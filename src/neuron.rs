@@ -247,7 +247,7 @@ fn tanh_activation(
         .iter()
         .fold(0.0, |a, x| {
             a + x.weight
-                + match &x.source {
+                * match &x.source {
                     Some(p) => p.borrow().potential,
                     None => n.potential,
                 }

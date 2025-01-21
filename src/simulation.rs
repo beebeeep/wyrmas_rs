@@ -1,10 +1,12 @@
 use core::f32;
-use std::sync::Arc;
-
 use rand::seq::SliceRandom;
+use sdl2::{
+    self, gfx::primitives::DrawRenderer, pixels::Color, rect::Rect, render::Canvas, video::Window,
+};
+use std::cell;
 
 use crate::{
-    genome::{mix_genome, Gene},
+    genome::Gene,
     misc::DIRECTIONS,
     wyrm::{self, Wyrm},
 };
@@ -126,7 +128,6 @@ impl Simulation {
 
         // reuse old generation by re-placing them randomly
         // and rewiring neurons using new genome
-        assert_eq!(new_genomes.len(), self.wyrmas.len());
         for i in 0..new_genomes.len() {
             (self.wyrmas[i].state.x, self.wyrmas[i].state.y) = self.pick_free_cell();
             self.wyrmas[i].state.dead = false;
@@ -163,6 +164,60 @@ impl Simulation {
         }
 
         return new_genomes;
+    }
+
+    pub fn render(self: &Self, canvas: &mut Canvas<Window>, cell_size: i16) {
+        canvas.set_draw_color(Color::BLACK);
+        canvas.clear();
+
+        canvas.set_draw_color(Color::RGB(0, 0x40, 0));
+        for x in 0..self.state.size_x {
+            for y in 0..self.state.size_y {
+                if self.state.selection_area[x as usize][y as usize] {
+                    canvas
+                        .fill_rect(Rect::new(
+                            x * cell_size as i32,
+                            y * cell_size as i32,
+                            cell_size as u32,
+                            cell_size as u32,
+                        ))
+                        .unwrap();
+                }
+            }
+        }
+
+        canvas.set_draw_color(Color::RGB(0x80, 0, 0));
+        for w in &self.wyrmas {
+            canvas
+                .fill_rect(Rect::new(
+                    w.state.x * cell_size as i32,
+                    w.state.y * cell_size as i32,
+                    cell_size as u32,
+                    cell_size as u32,
+                ))
+                .unwrap();
+        }
+
+        for x in 1..self.state.size_x as i16 {
+            canvas
+                .vline(
+                    x * cell_size,
+                    0,
+                    canvas.window().size().1 as i16,
+                    Color::GRAY,
+                )
+                .unwrap();
+        }
+        for y in 1..self.state.size_y as i16 {
+            canvas
+                .hline(
+                    0,
+                    canvas.window().size().0 as i16,
+                    y * cell_size,
+                    Color::GRAY,
+                )
+                .unwrap();
+        }
     }
 }
 
