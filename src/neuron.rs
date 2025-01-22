@@ -213,6 +213,10 @@ fn a_move(n: &mut Neuron, w: &mut wyrm::WyrmState, s: &mut simulation::Simulatio
         if y >= s.size_y {
             y = s.size_y - 1
         }
+        if s.world[x as usize][y as usize] {
+            // wyrm ahead, cannot move
+            return p;
+        }
         s.world[w.x as usize][w.y as usize] = false;
         (w.x, w.y) = (x, y);
         s.world[w.x as usize][w.y as usize] = true;

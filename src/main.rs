@@ -13,10 +13,9 @@ mod simulation;
 mod wyrm;
 
 fn main() {
-    let (size_x, size_y, cell_size, max_age) = (128, 128, 5, 1000);
-    let mut sim = Simulation::new(size_x, size_y, 5, 3, max_age, 5, 10, 1000, 0.01);
+    let (size_x, size_y, cell_size, ticks_per_gen) = (128, 128, 10, 100);
+    let mut sim = Simulation::new(size_x, size_y, 5, 3, ticks_per_gen, 5, 10, 1000, 0.01);
     let mut generation: u64 = 0;
-    /*
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
@@ -32,14 +31,10 @@ fn main() {
     canvas.clear();
     canvas.present();
     let mut event_pump = sdl_context.event_pump().unwrap();
-    */
-    let mut step = 0;
-    let mut t = Instant::now();
+    let mut tick;
+    let mut gen_start = Instant::now();
     'run: loop {
-        step = sim.simulation_step();
-        /*
-        sim.render(&mut canvas, cell_size as i16);
-        canvas.present();
+        tick = sim.simulation_step();
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -50,18 +45,29 @@ fn main() {
                 _ => {}
             }
         }
-        // thread::sleep(Duration::from_millis(16));
-        */
-        if step >= max_age {
+        sim.render(&mut canvas, cell_size as i16);
+        canvas.present();
+        if tick >= ticks_per_gen {
+            // sim.render(&mut canvas, cell_size as i16);
+            // canvas.present();
             generation += 1;
             let survivors = sim.apply_selection();
+            let selection_area = sim
+                .state
+                .selection_area
+                .iter()
+                .fold(0, |a, ys| a + ys.iter().filter(|v| **v).count());
+
+            let gen_time = Instant::now() - gen_start;
             println!(
-                "generation {generation}: {survivors} survivors ({}%), took {}ms",
+                "generation {generation}: {survivors} survivors ({:.1}%), ({:.1}% of selection area taken), took {}ms ({:.1} ticks/sec)",
                 100.0 * survivors as f32 / 1000.0,
-                (Instant::now() - t).as_millis()
+                100.0 * survivors as f32 / selection_area as f32,
+                gen_time.as_millis(),
+                ticks_per_gen as f32 / gen_time.as_secs_f32(),
             );
             sim.repopulate();
-            t = Instant::now();
+            gen_start = Instant::now();
         }
     }
 }

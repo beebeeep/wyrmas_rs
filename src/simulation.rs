@@ -12,7 +12,7 @@ use crate::{
 };
 
 pub struct Simulation {
-    state: SimulationState,
+    pub state: SimulationState,
     wyrmas: Vec<wyrm::Wyrm>,
 }
 
@@ -198,6 +198,8 @@ impl Simulation {
                 .unwrap();
         }
 
+        /*
+        // draw grid
         for x in 1..self.state.size_x as i16 {
             canvas
                 .vline(
@@ -218,6 +220,7 @@ impl Simulation {
                 )
                 .unwrap();
         }
+        */
     }
 }
 
