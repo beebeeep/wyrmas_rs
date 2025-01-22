@@ -57,7 +57,7 @@ fn main() {
             let survivors = sim.apply_selection();
             println!(
                 "generation {generation}: {survivors} survivors ({}%), took {}ms",
-                survivors as f32 / 1000.0,
+                100.0 * survivors as f32 / 1000.0,
                 (Instant::now() - t).as_millis()
             );
             sim.repopulate();
