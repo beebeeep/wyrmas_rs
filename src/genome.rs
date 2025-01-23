@@ -51,7 +51,6 @@ mod tests {
 
     #[test]
     fn test_weights() {
-        let g = Gene(65535);
         assert_eq!(Gene(65535).get_weight(), 4.0);
         assert!(Gene(0).get_weight() < -3.99);
     }

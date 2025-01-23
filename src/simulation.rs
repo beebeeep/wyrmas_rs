@@ -1,11 +1,9 @@
 use core::f32;
 use rand::seq::SliceRandom;
 use sdl2::{self, pixels::Color, rect::Rect, render::Canvas, video::Window};
-use std::cell;
 
 use crate::{
     genome::Gene,
-    misc::DIRECTIONS,
     wyrm::{self, Wyrm},
 };
 
@@ -78,7 +76,7 @@ impl Simulation {
         return s;
     }
 
-    pub fn pick_free_cell(self: &mut Self) -> (i32, i32) {
+    pub fn pick_free_cell(&mut self) -> (i32, i32) {
         let (mut x, mut y): (i32, i32);
         loop {
             (x, y) = (
@@ -92,7 +90,7 @@ impl Simulation {
         }
     }
 
-    pub fn simulation_step(self: &mut Self) -> i32 {
+    pub fn simulation_step(&mut self) -> i32 {
         self.state.tick += 1;
         self.state.osc_value = 0.5
             + 0.5
@@ -106,7 +104,7 @@ impl Simulation {
         return self.state.tick;
     }
 
-    pub fn apply_selection(self: &mut Self) -> usize {
+    pub fn apply_selection(&mut self) -> usize {
         let mut died: usize = 0;
         self.wyrmas.iter_mut().for_each(|w| {
             if !self.state.selection_area[w.state.x as usize][w.state.y as usize] {
@@ -117,7 +115,7 @@ impl Simulation {
         return self.wyrmas.len() - died;
     }
 
-    pub fn repopulate(self: &mut Self) {
+    pub fn repopulate(&mut self) {
         let mut new_genomes = self.breed_survivors();
         self.state
             .world
@@ -127,18 +125,14 @@ impl Simulation {
         // reuse old generation by re-placing them randomly
         // and rewiring neurons using new genome
         for i in 0..new_genomes.len() {
-            (self.wyrmas[i].state.x, self.wyrmas[i].state.y) = self.pick_free_cell();
-            self.wyrmas[i].state.dead = false;
-            self.wyrmas[i].state.dir =
-                DIRECTIONS[rand::random::<usize>() % DIRECTIONS.len()].clone();
-            self.wyrmas[i].state.genome = new_genomes.pop().unwrap();
-            self.wyrmas[i].wire_neurons();
+            let (x, y) = self.pick_free_cell();
+            self.wyrmas[i].reset(new_genomes.pop().unwrap(), x, y);
         }
         self.state.tick = 0;
     }
 
-    fn breed_survivors(self: &Self) -> Vec<Vec<Gene>> {
-        let mut survivors: Vec<&Wyrm> = self.wyrmas.iter().filter(|w| !w.state.dead).collect();
+    fn breed_survivors(&self) -> Vec<Vec<Gene>> {
+        let survivors: Vec<&Wyrm> = self.wyrmas.iter().filter(|w| !w.state.dead).collect();
         let child_count = self.wyrmas.len() / survivors.len();
         let mut new_genomes = Vec::with_capacity(self.wyrmas.len());
 
@@ -168,7 +162,7 @@ impl Simulation {
         return new_genomes;
     }
 
-    pub fn render(self: &Self, canvas: &mut Canvas<Window>, cell_size: i16) {
+    pub fn render(&self, canvas: &mut Canvas<Window>, cell_size: i16) {
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
 

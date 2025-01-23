@@ -1,10 +1,7 @@
-use std::{
-    env::{self, Args},
-    thread,
-    time::{Duration, Instant},
-};
+use std::time::Instant;
 
-use sdl2::{self, event::Event, keyboard::Keycode, render::Canvas, video::Window, EventPump, Sdl};
+use clap::Parser;
+use sdl2::{self, event::Event, keyboard::Keycode, render::Canvas, video::Window, EventPump};
 use simulation::Simulation;
 
 mod genome;
@@ -13,13 +10,26 @@ mod neuron;
 mod simulation;
 mod wyrm;
 
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short)]
+    visualize: bool,
+    #[arg(short, default_value_t = 0.05)]
+    mutation_rate: f32,
+    #[arg(short, default_value_t = 10)]
+    genome_size: usize,
+    #[arg(short, default_value_t = 3)]
+    inner_neurons: usize,
+}
+
 struct UI {
     canvas: Canvas<Window>,
     events: EventPump,
 }
 
-fn init_ui(w: i32, h: i32) -> Option<UI> {
-    if env::args().find(|x| x == "-v").is_none() {
+fn init_ui(args: &Args, w: i32, h: i32) -> Option<UI> {
+    if !args.visualize {
         return None;
     }
 
@@ -42,10 +52,21 @@ fn init_ui(w: i32, h: i32) -> Option<UI> {
 }
 
 fn main() {
+    let args = Args::parse();
     let (size_x, size_y, cell_size, ticks_per_gen) = (128, 128, 5, 100);
-    let mut sim = Simulation::new(size_x, size_y, 5, 3, ticks_per_gen, 5, 10, 1000, 0.05);
+    let mut sim = Simulation::new(
+        size_x,
+        size_y,
+        5,
+        args.inner_neurons,
+        ticks_per_gen,
+        5,
+        args.genome_size,
+        1000,
+        args.mutation_rate,
+    );
     let mut generation: u64 = 0;
-    let mut ui = init_ui(size_x * cell_size, size_y * cell_size);
+    let mut ui = init_ui(&args, size_x * cell_size, size_y * cell_size);
 
     let mut tick;
     let mut gen_start = Instant::now();

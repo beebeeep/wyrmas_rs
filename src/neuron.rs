@@ -46,19 +46,19 @@ impl Neuron {
             inputs: Vec::with_capacity(1),
         }
     }
-    pub fn add_input(self: &mut Self, weight: f32, n: Option<Rc<RefCell<Neuron>>>) {
+    pub fn add_input(&mut self, weight: f32, n: Option<Rc<RefCell<Neuron>>>) {
         self.inputs.push(Link {
             weight: weight,
             source: n.map(|n| Rc::clone(&n)),
         });
     }
 
-    pub fn reset(self: &mut Self) {
+    pub fn reset(&mut self) {
         // shell we drop the links explicitly?
         self.inputs.truncate(0);
     }
 
-    pub fn activate(self: &mut Self, w: &mut wyrm::WyrmState, s: &mut simulation::SimulationState) {
+    pub fn activate(&mut self, w: &mut wyrm::WyrmState, s: &mut simulation::SimulationState) {
         self.potential = w.responsiveness * (self.activate)(self, w, s);
     }
 }

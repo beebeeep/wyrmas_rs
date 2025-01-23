@@ -4,9 +4,8 @@ use std::rc::Rc;
 use crate::genome::{self, mix_genome, Gene};
 use crate::misc::{Dir, DIRECTIONS};
 use crate::neuron::{Neuron, ACTIONS, INNER, SENSORS};
-use crate::simulation::{Simulation, SimulationState};
+use crate::simulation::SimulationState;
 use rand;
-use rand::distributions::Standard;
 
 pub struct WyrmState {
     pub dead: bool,
@@ -72,6 +71,16 @@ impl Wyrm {
         return w;
     }
 
+    pub fn reset(&mut self, genome: Vec<Gene>, x: i32, y: i32) {
+        (self.state.x, self.state.y) = (x, y);
+        self.state.dead = false;
+        self.state.age = 0;
+        self.state.responsiveness = 1.0;
+        self.state.dir = DIRECTIONS[rand::random::<usize>() % DIRECTIONS.len()].clone();
+        self.state.genome = genome;
+        self.wire_neurons();
+    }
+
     pub fn wire_neurons(&mut self) {
         // as neurons will be reused accross generations, reset old links
         self.inner_layer.iter().for_each(|n| n.borrow_mut().reset());
@@ -97,7 +106,8 @@ impl Wyrm {
         }
     }
 
-    pub fn simulation_step(self: &mut Self, state: &mut SimulationState) {
+    pub fn simulation_step(&mut self, state: &mut SimulationState) {
+        self.state.age += 1;
         self.sensor_layer
             .iter()
             .for_each(|n| n.borrow_mut().activate(&mut self.state, state));
@@ -111,7 +121,7 @@ impl Wyrm {
             .for_each(|n| n.borrow_mut().activate(&mut self.state, state));
     }
 
-    pub fn breed(self: &Self, partner: &Self, mutation_rate: &f32) -> Vec<Gene> {
+    pub fn breed(&self, partner: &Self, mutation_rate: &f32) -> Vec<Gene> {
         let mut genome = mix_genome(&self.state.genome, &partner.state.genome);
         for gene in &mut genome {
             if rand::random::<f32>() < *mutation_rate {
