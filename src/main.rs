@@ -60,7 +60,7 @@ fn main() {
         5,
         args.inner_neurons,
         ticks_per_gen,
-        5,
+        50,
         args.genome_size,
         1000,
         args.mutation_rate,
@@ -73,6 +73,7 @@ fn main() {
     'run: loop {
         tick = sim.simulation_step();
         if tick >= ticks_per_gen {
+            generation += 1;
             if let Some(ref mut ui) = ui {
                 for event in ui.events.poll_iter() {
                     match event {
@@ -87,7 +88,6 @@ fn main() {
                 sim.render(&mut ui.canvas, cell_size as i16);
                 ui.canvas.present();
             }
-            generation += 1;
             let survivors = sim.apply_selection();
             let selection_area = sim
                 .state

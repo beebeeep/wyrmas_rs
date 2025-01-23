@@ -13,6 +13,7 @@ pub static SENSORS: &'static [ActivationFn] = &[
     s_age,
     s_rand,
     s_pop,
+    s_dist_barrier,
     s_dist_nearest,
     s_dir_nearest,
     s_dist_fwd,
@@ -92,6 +93,21 @@ fn s_pop(_: &mut Neuron, w: &mut wyrm::WyrmState, s: &mut simulation::Simulation
     return c as f32 / 8.0;
 }
 
+fn s_dist_barrier(
+    _: &mut Neuron,
+    w: &mut wyrm::WyrmState,
+    s: &mut simulation::SimulationState,
+) -> f32 {
+    // distance to barrier
+    for t in 0..w.max_dist {
+        let (x, y) = (w.x + t * w.dir.0, w.y + t * w.dir.1);
+        if x < 0 || x >= s.size_x || y < 0 || y >= s.size_y {
+            return 1.0 - (t as f32) / (w.max_dist as f32);
+        }
+    }
+    return 0.0;
+}
+
 fn s_dist_nearest(
     _: &mut Neuron,
     w: &mut wyrm::WyrmState,
@@ -120,7 +136,7 @@ fn s_dist_fwd(_: &mut Neuron, w: &mut wyrm::WyrmState, s: &mut simulation::Simul
             return 0.0;
         }
         if s.world[x as usize][y as usize] {
-            return 1.0 - (t as f32) / (s.max_age as f32);
+            return 1.0 - (t as f32) / (w.max_dist as f32);
         }
     }
     return 0.0;
