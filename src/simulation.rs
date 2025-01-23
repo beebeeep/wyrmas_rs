@@ -1,8 +1,6 @@
 use core::f32;
 use rand::seq::SliceRandom;
-use sdl2::{
-    self, gfx::primitives::DrawRenderer, pixels::Color, rect::Rect, render::Canvas, video::Window,
-};
+use sdl2::{self, pixels::Color, rect::Rect, render::Canvas, video::Window};
 use std::cell;
 
 use crate::{
@@ -146,10 +144,13 @@ impl Simulation {
 
         // generate random paris from survived population
         // each pair will have at least child_count children
-        survivors.shuffle(&mut rand::thread_rng());
+        //survivors.shuffle(&mut rand::thread_rng());
         for i in perm(survivors.len()) {
             new_genomes.extend((0..child_count).map(|_| {
-                survivors[i].breed(&survivors[i % survivors.len()], &self.state.mutation_rate)
+                survivors[i].breed(
+                    &survivors[(i + 1) % survivors.len()],
+                    &self.state.mutation_rate,
+                )
             }));
         }
 
@@ -158,9 +159,10 @@ impl Simulation {
             .iter()
             .take(self.wyrmas.len() % survivors.len())
         {
-            new_genomes.push(
-                survivors[*i].breed(&survivors[*i % survivors.len()], &self.state.mutation_rate),
-            );
+            new_genomes.push(survivors[*i].breed(
+                &survivors[(*i + 1) % survivors.len()],
+                &self.state.mutation_rate,
+            ));
         }
 
         return new_genomes;
@@ -170,6 +172,7 @@ impl Simulation {
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
 
+        // draw selection area
         canvas.set_draw_color(Color::RGB(0, 0x40, 0));
         for x in 0..self.state.size_x {
             for y in 0..self.state.size_y {
@@ -186,6 +189,7 @@ impl Simulation {
             }
         }
 
+        // draw wyrmas
         canvas.set_draw_color(Color::RGB(0x80, 0, 0));
         for w in &self.wyrmas {
             canvas

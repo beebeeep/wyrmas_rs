@@ -40,7 +40,7 @@ pub fn mix_genome(a: &Vec<Gene>, b: &Vec<Gene>) -> Vec<Gene> {
     let mut n: Vec<usize> = (0..a.len()).collect();
     n.shuffle(&mut rand::thread_rng());
     for (i, idx) in n.iter().enumerate() {
-        r.push(v[i % 2][*idx].clone());
+        r.push(v[i % 2][*idx].clone()); // combine new genome by randomly selecting genes from a or b
     }
     return r;
 }
