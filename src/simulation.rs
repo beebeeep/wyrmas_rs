@@ -115,6 +115,10 @@ impl Simulation {
         return self.wyrmas.len() - died;
     }
 
+    pub fn get_survivor(&self) -> Option<&Wyrm> {
+        self.wyrmas.iter().filter(|w| !w.state.dead).next()
+    }
+
     pub fn repopulate(&mut self) {
         let mut new_genomes = self.breed_survivors();
         self.state

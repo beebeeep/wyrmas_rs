@@ -22,12 +22,29 @@ pub static SENSORS: &'static [ActivationFn] = &[
     s_good_around,
     s_good_dist,
 ];
+
+pub static SENSOR_NAMES: &'static [&'static str] = &[
+    "s_age",
+    "s_rand",
+    "s_pop",
+    "s_dist_barrier",
+    "s_dist_nearest",
+    "s_dir_nearest",
+    "s_dist_fwd",
+    "s_osc",
+    "s_good_fwd",
+    "s_good_around",
+    "s_good_dist",
+];
+
 pub static ACTIONS: &'static [ActivationFn] = &[a_resp, a_move, a_turn];
+pub static ACTION_NAMES: &'static [&'static str] = &["a_resp", "a_move", "a_turn"];
 
 pub static INNER: &'static [ActivationFn] = &[tanh_activation];
+pub static INNER_NAME: &'static str = "inner";
 
 pub struct Neuron {
-    pub id: i32,
+    pub name: String,
     pub potential: f32,
     activate: ActivationFn,
     inputs: Vec<Link>,
@@ -39,9 +56,9 @@ struct Link {
 }
 
 impl Neuron {
-    pub fn new(id: i32, activate: ActivationFn) -> Self {
+    pub fn new(name: String, activate: ActivationFn) -> Self {
         Neuron {
-            id: id,
+            name,
             potential: 0.0,
             activate: activate,
             inputs: Vec::with_capacity(1),
@@ -52,6 +69,17 @@ impl Neuron {
             weight: weight,
             source: n.map(|n| Rc::clone(&n)),
         });
+    }
+
+    pub fn get_inputs(&self) -> Vec<(String, f32)> {
+        let mut inputs = Vec::with_capacity(self.inputs.len());
+        for link in &self.inputs {
+            inputs.push(match &link.source {
+                None => (self.name.clone(), link.weight),
+                Some(s) => (s.borrow().name.clone(), link.weight),
+            })
+        }
+        return inputs;
     }
 
     pub fn reset(&mut self) {

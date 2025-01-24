@@ -3,8 +3,9 @@ use std::rc::Rc;
 
 use crate::genome::{self, mix_genome, Gene};
 use crate::misc::{Dir, DIRECTIONS};
-use crate::neuron::{Neuron, ACTIONS, INNER, SENSORS};
+use crate::neuron::{Neuron, ACTIONS, ACTION_NAMES, INNER, INNER_NAME, SENSORS, SENSOR_NAMES};
 use crate::simulation::SimulationState;
+use dot_writer::{Attributes, DotWriter};
 use rand;
 
 pub struct WyrmState {
@@ -42,28 +43,26 @@ impl Wyrm {
             inner_layer: Vec::with_capacity(num_inner),
             action_layer: Vec::with_capacity(3),
         };
-        let mut id = 0;
         // earch wyrm has full set of neurons that are not necessarily wired together
         for i in 0..w.sensor_layer.capacity() {
+            let n = i % SENSORS.len();
             w.sensor_layer.push(Rc::new(RefCell::new(Neuron::new(
-                id,
-                SENSORS[i % SENSORS.len()],
+                String::from(SENSOR_NAMES[n]),
+                SENSORS[n],
             ))));
-            id += 1;
         }
         for i in 0..w.inner_layer.capacity() {
             w.inner_layer.push(Rc::new(RefCell::new(Neuron::new(
-                id,
+                format!("{}{i}", INNER_NAME),
                 INNER[i % INNER.len()],
             ))));
-            id += 1;
         }
         for i in 0..w.action_layer.capacity() {
+            let n = i % ACTIONS.len();
             w.action_layer.push(Rc::new(RefCell::new(Neuron::new(
-                id,
-                ACTIONS[i % ACTIONS.len()],
+                String::from(ACTION_NAMES[n]),
+                ACTIONS[n],
             ))));
-            id += 1
         }
 
         w.wire_neurons();
@@ -97,7 +96,7 @@ impl Wyrm {
                 (true, id) => self.inner_layer[id % self.inner_layer.len()].clone(),
                 (false, id) => self.action_layer[id % self.action_layer.len()].clone(),
             };
-            let src = if src.borrow().id == sink.borrow().id {
+            let src = if src.borrow().name == sink.borrow().name {
                 None
             } else {
                 Some(src)
@@ -129,5 +128,30 @@ impl Wyrm {
             }
         }
         return genome;
+    }
+
+    pub fn dump_genome(&self) -> Vec<u8> {
+        let mut dot = Vec::new();
+        {
+            let mut writer = DotWriter::from(&mut dot);
+            let mut digraph = writer.digraph();
+            for n in &self.inner_layer {
+                for (input, weight) in n.borrow().get_inputs() {
+                    digraph
+                        .edge(input, n.borrow().name.clone())
+                        .attributes()
+                        .set_label(&format!("{weight:.1}"));
+                }
+            }
+            for n in &self.action_layer {
+                for (input, weight) in n.borrow().get_inputs() {
+                    digraph
+                        .edge(input, n.borrow().name.clone())
+                        .attributes()
+                        .set_label(&format!("{weight:.1}"));
+                }
+            }
+        }
+        return dot;
     }
 }

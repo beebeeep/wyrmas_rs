@@ -1,8 +1,10 @@
-use std::time::Instant;
+use std::{fmt::Display, fs::File, io::Write, time::Instant};
 
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use sdl2::{self, event::Event, keyboard::Keycode, render::Canvas, video::Window, EventPump};
 use simulation::Simulation;
+use wyrm::Wyrm;
 
 mod genome;
 mod misc;
@@ -51,6 +53,18 @@ fn init_ui(args: &Args, w: i32, h: i32) -> Option<UI> {
     });
 }
 
+fn dump_survivor(generation: u64, w: Option<&Wyrm>) -> Result<String> {
+    match w {
+        None => Err(anyhow!("nobody survived :(")),
+        Some(s) => {
+            let filename = format!("./survivor-{generation}.dot");
+            let mut file = File::create(&filename)?;
+            file.write(&s.dump_genome())?;
+            Ok(filename)
+        }
+    }
+}
+
 fn main() {
     let args = Args::parse();
     let (size_x, size_y, cell_size, ticks_per_gen) = (128, 128, 5, 100);
@@ -70,6 +84,7 @@ fn main() {
 
     let mut tick;
     let mut gen_start = Instant::now();
+    let mut dump = false;
     'run: loop {
         tick = sim.simulation_step();
         if tick >= ticks_per_gen {
@@ -82,6 +97,10 @@ fn main() {
                             keycode: Some(Keycode::Escape),
                             ..
                         } => break 'run,
+                        Event::KeyDown {
+                            keycode: Some(Keycode::D),
+                            ..
+                        } => dump = true,
                         _ => {}
                     }
                 }
@@ -89,6 +108,13 @@ fn main() {
                 ui.canvas.present();
             }
             let survivors = sim.apply_selection();
+            if dump {
+                dump = false;
+                match dump_survivor(generation, sim.get_survivor()) {
+                    Ok(file) => println!("dumping survivor to {file}"),
+                    Err(err) => println!("error dumping survivor: {err}"),
+                }
+            }
             let selection_area = sim
                 .state
                 .selection_area
