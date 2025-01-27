@@ -24,21 +24,21 @@ pub static SENSORS: &'static [ActivationFn] = &[
 ];
 
 pub static SENSOR_NAMES: &'static [&'static str] = &[
-    "s_age",
-    "s_rand",
-    "s_pop",
-    "s_dist_barrier",
-    "s_dist_nearest",
-    "s_dir_nearest",
-    "s_dist_fwd",
-    "s_osc",
-    "s_good_fwd",
-    "s_good_around",
-    "s_good_dist",
+    "age",
+    "random",
+    "population_density",
+    "dist_to_barrier",
+    "dist_to_nearest_cell",
+    "dir_to_nearest_cell",
+    "dist_to_nearest_cell_ahead",
+    "oscillator",
+    "count_of_good_places_ahead",
+    "count_of_good_places_around",
+    "distance_to_good_place",
 ];
 
 pub static ACTIONS: &'static [ActivationFn] = &[a_resp, a_move, a_turn];
-pub static ACTION_NAMES: &'static [&'static str] = &["a_resp", "a_move", "a_turn"];
+pub static ACTION_NAMES: &'static [&'static str] = &["agitate", "move", "turn"];
 
 pub static INNER: &'static [ActivationFn] = &[tanh_activation];
 pub static INNER_NAME: &'static str = "inner";

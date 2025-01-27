@@ -1,4 +1,11 @@
-use std::{fmt::Display, fs::File, io::Write, time::Instant};
+use std::{
+    fmt::Display,
+    fs::File,
+    io::Write,
+    process::{self, Stdio},
+    thread,
+    time::Instant,
+};
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
@@ -54,14 +61,42 @@ fn init_ui(args: &Args, w: i32, h: i32) -> Option<UI> {
 }
 
 fn dump_survivor(generation: u64, w: Option<&Wyrm>) -> Result<String> {
-    match w {
-        None => Err(anyhow!("nobody survived :(")),
-        Some(s) => {
-            let filename = format!("./survivor-{generation}.dot");
-            let mut file = File::create(&filename)?;
-            file.write(&s.dump_genome())?;
-            Ok(filename)
+    let s = w.ok_or(anyhow!("nobody survived :("))?;
+    let filename = format!("./survivor-{generation}.png");
+    let mut dot = process::Command::new("dot")
+        .args(["-Tpng", "-o", &filename])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()?;
+    let mut stdin = dot.stdin.take().ok_or(anyhow!("failed to pipe stdin"))?;
+    stdin.write_all(&s.dump_genome())?;
+    drop(stdin);
+    dot.wait()?;
+    Ok(filename)
+}
+
+fn view_survivor(generation: u64, w: Option<&Wyrm>) -> Result<String> {
+    match dump_survivor(generation, w) {
+        Ok(file) => {
+            let f = file.clone();
+            thread::spawn(move || {
+                match process::Command::new("xdg-open")
+                    .arg(file.clone())
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .spawn()
+                {
+                    Err(err) => println!("error opening viewer: {err}"),
+                    Ok(mut viewer) => {
+                        println!("dumping survivor to {file}");
+                        let _ = viewer.wait();
+                    }
+                }
+            });
+            Ok(f)
         }
+        Err(err) => Err(anyhow!("error dumping survivor: {err}")),
     }
 }
 
@@ -85,6 +120,7 @@ fn main() {
     let mut tick;
     let mut gen_start = Instant::now();
     let mut dump = false;
+    let mut view = false;
     'run: loop {
         tick = sim.simulation_step();
         if tick >= ticks_per_gen {
@@ -101,6 +137,10 @@ fn main() {
                             keycode: Some(Keycode::D),
                             ..
                         } => dump = true,
+                        Event::KeyDown {
+                            keycode: Some(Keycode::V),
+                            ..
+                        } => view = true,
                         _ => {}
                     }
                 }
@@ -111,6 +151,13 @@ fn main() {
             if dump {
                 dump = false;
                 match dump_survivor(generation, sim.get_survivor()) {
+                    Ok(file) => println!("dumping survivor to {file}"),
+                    Err(err) => println!("error dumping survivor: {err}"),
+                }
+            }
+            if view {
+                view = false;
+                match view_survivor(generation, sim.get_survivor()) {
                     Ok(file) => println!("dumping survivor to {file}"),
                     Err(err) => println!("error dumping survivor: {err}"),
                 }
@@ -131,6 +178,7 @@ fn main() {
                 1.0 / gen_time.as_secs_f32()
             );
             sim.repopulate();
+            sim.create_selection_area();
             gen_start = Instant::now();
         }
     }

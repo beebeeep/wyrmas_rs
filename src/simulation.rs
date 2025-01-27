@@ -1,9 +1,10 @@
 use core::f32;
 use rand::seq::SliceRandom;
-use sdl2::{self, pixels::Color, rect::Rect, render::Canvas, video::Window};
+use sdl2::{self, libc::DIR, pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 use crate::{
     genome::Gene,
+    misc::{Dir, DIRECTIONS},
     wyrm::{self, Wyrm},
 };
 
@@ -63,17 +64,74 @@ impl Simulation {
             ));
         }
 
-        // create selection area in the middle of the world
-        for x in 0..size_x {
-            for y in 0..size_y {
-                s.state.selection_area[x as usize][y as usize] = x >= size_x * 3 / 8
-                    && x < size_x * 5 / 8
-                    && y >= size_y * 3 / 8
-                    && y < size_y * 5 / 8;
+        s.create_selection_area();
+        return s;
+    }
+
+    pub fn create_selection_area(&mut self) {
+        self.state
+            .selection_area
+            .iter_mut()
+            .for_each(|col| col.iter_mut().for_each(|c| *c = false));
+
+        /*
+        // selection area in the middle of the world
+        for x in 0..self.state.size_x {
+            for y in 0..self.state.size_y {
+                self.state.selection_area[x as usize][y as usize] = x >= self.state.size_x * 3 / 8
+                    && x < self.state.size_x * 5 / 8
+                    && y >= self.state.size_y * 3 / 8
+                    && y < self.state.size_y * 5 / 8;
             }
         }
+        */
 
-        return s;
+        // random spots at certain density
+        /*
+        let total_area = self.state.size_x as f32 * self.state.size_y as f32;
+        let mut ok_count = 0.0;
+        loop {
+            let (mut sx, mut sy, mut dir) = (
+                (rand::random::<i32>() % self.state.size_x).abs(),
+                (rand::random::<i32>() % self.state.size_y).abs(),
+                DIRECTIONS[rand::random::<usize>() % DIRECTIONS.len()].clone(),
+            );
+            for _ in 0..rand::random::<u32>() % 90 {
+                let (x, y) = (sx + dir.0, sy + dir.1);
+                if x < 0 || x >= self.state.size_x || y < 0 || y >= self.state.size_y {
+                    continue;
+                }
+                if self.state.selection_area[x as usize][y as usize] {
+                    continue;
+                }
+                self.state.selection_area[x as usize][y as usize] = true;
+                ok_count += 1.0;
+                (sx, sy) = (x, y);
+                dir = DIRECTIONS[rand::random::<usize>() % DIRECTIONS.len()].clone();
+                if ok_count / total_area >= 0.3 {
+                    return;
+                }
+            }
+        }
+        */
+
+        // random rectangles
+        for _ in 0..10 {
+            let (sx, sy, w, h) = (
+                rand::random::<u32>() % self.state.size_x as u32,
+                rand::random::<u32>() % self.state.size_y as u32,
+                rand::random::<u32>() % 30,
+                rand::random::<u32>() % 30,
+            );
+            for x in sx..(sx + w) {
+                for y in sy..sy + h {
+                    if x as i32 >= self.state.size_x || y as i32 >= self.state.size_y {
+                        continue;
+                    }
+                    self.state.selection_area[x as usize][y as usize] = true;
+                }
+            }
+        }
     }
 
     pub fn pick_free_cell(&mut self) -> (i32, i32) {
@@ -137,6 +195,17 @@ impl Simulation {
 
     fn breed_survivors(&self) -> Vec<Vec<Gene>> {
         let survivors: Vec<&Wyrm> = self.wyrmas.iter().filter(|w| !w.state.dead).collect();
+        if survivors.is_empty() {
+            // nobody survived, generate random gene pool from scratch :(
+            return (0..self.wyrmas.len())
+                .map(|_| {
+                    (0..self.wyrmas[0].state.genome.len())
+                        .map(|_| Gene(rand::random()))
+                        .collect::<Vec<Gene>>()
+                })
+                .collect();
+        }
+
         let child_count = self.wyrmas.len() / survivors.len();
         let mut new_genomes = Vec::with_capacity(self.wyrmas.len());
 
