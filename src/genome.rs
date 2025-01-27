@@ -32,6 +32,10 @@ impl Gene {
             self.0 = self.0 ^ (1 << rand::random::<u32>() % 32);
         }
     }
+
+    pub fn diff(&self, other: &Self) -> f32 {
+        (self.0 ^ other.0).count_ones() as f32 / u32::MAX as f32
+    }
 }
 
 pub fn mix_genome(a: &Vec<Gene>, b: &Vec<Gene>) -> Vec<Gene> {
@@ -53,5 +57,12 @@ mod tests {
     fn test_weights() {
         assert_eq!(Gene(65535).get_weight(), 4.0);
         assert!(Gene(0).get_weight() < -3.99);
+    }
+
+    #[test]
+    fn test_diff() {
+        assert_eq!(Gene(0b0011).diff(&Gene(0b0011)), 0.0);
+        assert!(Gene(0).diff(&Gene(0xffffffff)) < 0.001);
+        assert!(Gene(0).diff(&Gene(0xffff0000)) - 0.5 < 0.001);
     }
 }
